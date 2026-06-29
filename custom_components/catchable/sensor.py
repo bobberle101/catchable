@@ -18,7 +18,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -621,7 +620,8 @@ async def async_setup_entry(
         update_interval=timedelta(seconds=scan_interval),
         update_method=_update,
     )
-    # Standard coordinator bootstrap ensures periodic polling is scheduled.
+    # The coordinator's update_interval already schedules periodic polling; this
+    # bootstrap just performs the first fetch.
     await coordinator.async_config_entry_first_refresh()
     sensor = CatchableDepartureSensor(
         coordinator,
@@ -635,17 +635,6 @@ async def async_setup_entry(
         language,
     )
     async_add_entities([sensor])
-
-    async def _periodic_refresh(_now) -> None:
-        await coordinator.async_request_refresh()
-
-    entry.async_on_unload(
-        async_track_time_interval(
-            hass,
-            _periodic_refresh,
-            timedelta(seconds=scan_interval),
-        )
-    )
 
 
 class CatchableDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
