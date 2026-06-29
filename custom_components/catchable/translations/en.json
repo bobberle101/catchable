@@ -1,0 +1,59 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose data source",
+        "description": "Pick the data source (region) this board reads from. The available cities and stations depend on this choice.",
+        "data": {
+          "source": "Data source"
+        }
+      },
+      "city": {
+        "title": "Choose city",
+        "description": "Start typing to search for a city or town — the station list on the next step is filtered to it.",
+        "data": {
+          "city": "City"
+        }
+      },
+      "station": {
+        "title": "Choose station",
+        "description": "Stations in {city}. Start typing to search by name — the stop ID is filled in automatically. Walk time is how many minutes you need to reach the stop; departures sooner than that are hidden.",
+        "data": {
+          "station": "Station",
+          "walk_time_minutes": "Walk time to stop",
+          "max_departures": "Number of departures"
+        }
+      },
+      "filters": {
+        "title": "What to show",
+        "description": "Choose whether this board shows departures or arrivals (one direction per stop — add the stop again for the other). Pick which transport types to show, or leave “All transport types” on to show everything this stop offers.",
+        "data": {
+          "direction": "This board shows",
+          "all_transport_types": "All transport types",
+          "transport_types": "Transport types"
+        }
+      }
+    },
+    "error": {
+      "invalid_city": "Please choose a city.",
+      "invalid_input": "Please choose a station."
+    },
+    "abort": {
+      "already_configured": "This stop is already configured for this source and direction."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Stop options",
+        "description": "Adjust the walk time, number of departures and transport types. The data source and direction (departures or arrivals) are fixed when the stop is added.",
+        "data": {
+          "walk_time_minutes": "Walk time to stop",
+          "max_departures": "Number of departures",
+          "all_transport_types": "All transport types",
+          "transport_types": "Transport types"
+        }
+      }
+    }
+  }
+}

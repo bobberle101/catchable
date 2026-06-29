@@ -1,0 +1,59 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Datenquelle wählen",
+        "description": "Wähle die Datenquelle (Region), aus der diese Tafel liest. Die verfügbaren Städte und Haltestellen hängen von dieser Auswahl ab.",
+        "data": {
+          "source": "Datenquelle"
+        }
+      },
+      "city": {
+        "title": "Stadt wählen",
+        "description": "Tippe los, um eine Stadt oder Gemeinde zu suchen – die Haltestellenliste im nächsten Schritt wird darauf gefiltert.",
+        "data": {
+          "city": "Stadt"
+        }
+      },
+      "station": {
+        "title": "Haltestelle wählen",
+        "description": "Haltestellen in {city}. Tippe los, um nach Namen zu suchen – die Haltestellen-ID wird automatisch ergänzt. Die Gehzeit ist die Anzahl Minuten, die du zur Haltestelle brauchst; frühere Abfahrten werden ausgeblendet.",
+        "data": {
+          "station": "Haltestelle",
+          "walk_time_minutes": "Gehzeit zur Haltestelle",
+          "max_departures": "Anzahl der Abfahrten"
+        }
+      },
+      "filters": {
+        "title": "Anzeige",
+        "description": "Lege fest, ob diese Tafel Abfahrten oder Ankünfte zeigt (eine Richtung pro Haltestelle – für die andere Richtung die Haltestelle erneut hinzufügen). Wähle die anzuzeigenden Verkehrsmittel aus oder lass „Alle Verkehrsmittel“ aktiviert, um alles anzuzeigen, was diese Haltestelle bedient.",
+        "data": {
+          "direction": "Diese Tafel zeigt",
+          "all_transport_types": "Alle Verkehrsmittel",
+          "transport_types": "Verkehrsmittel"
+        }
+      }
+    },
+    "error": {
+      "invalid_city": "Bitte eine Stadt wählen.",
+      "invalid_input": "Bitte eine Haltestelle wählen."
+    },
+    "abort": {
+      "already_configured": "Diese Haltestelle ist für diese Quelle und Richtung bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Haltestellen-Optionen",
+        "description": "Passe Gehzeit, Anzahl der Abfahrten und Verkehrsmittel an. Datenquelle und Richtung (Abfahrten oder Ankünfte) sind beim Hinzufügen festgelegt.",
+        "data": {
+          "walk_time_minutes": "Gehzeit zur Haltestelle",
+          "max_departures": "Anzahl der Abfahrten",
+          "all_transport_types": "Alle Verkehrsmittel",
+          "transport_types": "Verkehrsmittel"
+        }
+      }
+    }
+  }
+}

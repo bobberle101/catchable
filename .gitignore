@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Home Assistant / secrets (never commit)
+.env
+.env.local
+secrets.yaml
+*.storage
+.storage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build / scratch
+/tmp/
+*.zip
