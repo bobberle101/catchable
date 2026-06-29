@@ -14,6 +14,8 @@
  *   type: custom:catchable-departures-card
  *   entity: sensor.your_stop_departures
  *   title: optional override (defaults to the entity's friendly name)
+ *   line_colors: true   # official Berlin U-/S-Bahn line colours (default: true)
+ *   ring_symbols: true  # ⟳ / ⟲ for the S41 / S42 Ringbahn (default: true)
  */
 
 const STRINGS = {
@@ -37,12 +39,37 @@ const STRINGS = {
   },
 };
 
+// Official Berlin U-Bahn and S-Bahn line colours. Keys are normalized line
+// tokens (mode letter + number, e.g. "U1", "S41"). Sources: BVG / S-Bahn
+// Berlin corporate line colours.
+const LINE_COLORS = {
+  U1: "#7DAD4C", U2: "#DA421E", U3: "#16683D", U4: "#F0D722", U5: "#7E5330",
+  U6: "#8C6DAB", U7: "#528DBA", U8: "#224F86", U9: "#F3791D",
+  S1: "#DE4DA4", S2: "#005F27", S25: "#005F27", S26: "#005F27", S3: "#0066AD",
+  S41: "#A23C1C", S42: "#CB6418", S45: "#CD9C2E", S46: "#CD9C2E", S47: "#CD9C2E",
+  S5: "#EB7405", S7: "#816DAA", S75: "#816DAA", S8: "#5CB531", S85: "#5CB531",
+  S9: "#8D2233",
+};
+
+// Fallback colours per transport category when a line has no specific colour.
+const CATEGORY_COLORS = {
+  subway: "#224F86",
+  suburban: "#007A33",
+  regional: "#EC0016",
+  tram: "#D71C24",
+  bus: "#95276E",
+  ferry: "#0098D4",
+};
+
 class CatchableDeparturesCard extends HTMLElement {
   setConfig(config) {
     // Accept an empty entity (e.g. the card picker's stub config) without
     // throwing — a hard throw here surfaces as "Configuration error" in the
     // add-card dialog. We render a friendly hint instead when none is set.
     this._config = config || {};
+    // Display toggles default to on.
+    this._lineColors = this._config.line_colors !== false;
+    this._ringSymbols = this._config.ring_symbols !== false;
     this._lastKey = null;
   }
 
@@ -56,6 +83,51 @@ class CatchableDeparturesCard extends HTMLElement {
       .split("-")[0]
       .toLowerCase();
     return STRINGS[lang] || STRINGS.en;
+  }
+
+  // Normalized U-/S-Bahn token ("U 1" -> "U1", "S 41" -> "S41"), else null.
+  _lineKey(line) {
+    const s = String(line || "").trim();
+    let m = s.match(/^U\s*0*(\d+)/i);
+    if (m) return "U" + m[1];
+    m = s.match(/^S\s*0*(\d+)/i);
+    if (m) return "S" + m[1];
+    return null;
+  }
+
+  _category(line) {
+    const s = String(line || "").trim();
+    if (/^U\s*\d/i.test(s)) return "subway";
+    if (/^S\s*\d/i.test(s)) return "suburban";
+    if (/^Tram/i.test(s)) return "tram";
+    if (/^Bus/i.test(s)) return "bus";
+    if (/^(Ferry|F\d)/i.test(s)) return "ferry";
+    return "regional";
+  }
+
+  _lineColor(line) {
+    const key = this._lineKey(line);
+    if (key && LINE_COLORS[key]) return LINE_COLORS[key];
+    return CATEGORY_COLORS[this._category(line)] || null;
+  }
+
+  // Ring symbol for the Berlin Ringbahn: S41 runs clockwise, S42 anti-clockwise.
+  _ringSymbol(line) {
+    const key = this._lineKey(line);
+    if (key === "S41") return "\u27F3"; // ⟳
+    if (key === "S42") return "\u27F2"; // ⟲
+    return "";
+  }
+
+  // Pick a readable text colour for a given background.
+  _contrast(hex) {
+    const c = String(hex).replace("#", "");
+    if (c.length < 6) return "#fff";
+    const r = parseInt(c.substr(0, 2), 16);
+    const g = parseInt(c.substr(2, 2), 16);
+    const b = parseInt(c.substr(4, 2), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6 ? "#111" : "#fff";
   }
 
   _render() {
@@ -86,7 +158,13 @@ class CatchableDeparturesCard extends HTMLElement {
     const departures = Array.isArray(attrs.departures) ? attrs.departures : [];
 
     // Cheap change detection so we don't rebuild the DOM every state poll.
-    const key = JSON.stringify([title, attrs.stale, departures]);
+    const key = JSON.stringify([
+      title,
+      attrs.stale,
+      departures,
+      this._lineColors,
+      this._ringSymbols,
+    ]);
     if (key === this._lastKey) return;
     this._lastKey = key;
 
@@ -104,8 +182,17 @@ class CatchableDeparturesCard extends HTMLElement {
         const delay = Number(d.delay_min || 0);
         const status = cancelled ? "cancelled" : delay >= 1 ? "delayed" : "ontime";
         const arrow = (d.kind || "departure") === "arrival" ? "←" : "→";
-        const line = this._esc(d.line || "—");
+        const rawLine = d.line || "—";
         const place = this._esc(d.direction || "—");
+
+        // Line badge: optional official colour + optional Ringbahn symbol.
+        const ring = this._ringSymbols ? this._ringSymbol(rawLine) : "";
+        const lineText = this._esc(rawLine) + (ring ? `\u00a0${ring}` : "");
+        const color = this._lineColors ? this._lineColor(rawLine) : null;
+        const lineCls = color ? "line badge" : "line";
+        const lineStyle = color
+          ? ` style="background:${color};color:${this._contrast(color)}"`
+          : "";
 
         let right;
         if (cancelled) {
@@ -120,7 +207,7 @@ class CatchableDeparturesCard extends HTMLElement {
 
         body +=
           `<div class="row ${status}">` +
-          `<span class="left"><span class="line">${line}</span>` +
+          `<span class="left"><span class="${lineCls}"${lineStyle}>${lineText}</span>` +
           `<span class="arrow">${arrow}</span>` +
           `<span class="place">${place}</span></span>` +
           `<span class="right">${right}</span>` +
@@ -165,6 +252,10 @@ class CatchableDeparturesCard extends HTMLElement {
         background: color-mix(in srgb, var(--error-color, #c62828) 12%, transparent); }
       .left { display: flex; align-items: center; gap: 8px; min-width: 0; }
       .line { font-weight: 600; white-space: nowrap; }
+      .line.badge {
+        display: inline-block; padding: 1px 8px; border-radius: 6px;
+        font-weight: 700; min-width: 1.6em; text-align: center;
+      }
       .arrow { opacity: 0.6; }
       .place { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .right {

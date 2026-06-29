@@ -25,6 +25,8 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 - 🗺️ **Bundled VBB stop index** — the Berlin-Brandenburg stop index (~26,000 stations) ships with the integration and powers the setup picker, so there's no API key and no stop IDs to look up. Realtime availability depends on the VBB GTFS-RT feed.
 - 🚇 **Transport-type filter** — U-Bahn, S-Bahn, train, tram, bus, ferry. The types serving your stop are auto-detected and preselected, with an "All" toggle.
 - ⏱️ **Real-time delays & cancellations** *(where provided by the feed)* — colour-coded rows: green = on time, yellow = delayed (with a clear "*(3 min late)*" note), red = cancelled.
+- 🎨 **Official Berlin line colours** — U-Bahn and S-Bahn line badges use the official BVG / S-Bahn Berlin colours (other modes fall back to a per-category colour). Toggle with `line_colors`.
+- 🔄 **Ringbahn direction** — the S41 / S42 ring shows ⟳ (clockwise) / ⟲ (anti-clockwise) next to the line. Toggle with `ring_symbols`.
 - 🎴 **Bundled Lovelace card** — auto-registered by the integration (no dashboard resource to add). Minutes are right-aligned and tabular; the stop name is the card title.
 - 🌍 **Localized** — English (default) and German for the setup flow and the card.
 - 💾 **Resilient** — caches the last good result and restores it across restarts, so a brief feed outage doesn't blank your board.
@@ -71,9 +73,20 @@ Add a card and choose **Catchable Departures**, or in YAML:
 type: custom:catchable-departures-card
 entity: sensor.burgstrasse_departures
 # title: optional — defaults to the entity's friendly name (the stop name)
+# line_colors: true   # official Berlin U-/S-Bahn line colours (default: true)
+# ring_symbols: true  # ⟳ / ⟲ for the S41 / S42 Ringbahn (default: true)
 ```
 
 The card renders one row per service: line + destination on the left, minutes right-aligned on the right, with delay/cancellation colour coding.
+
+### Card options
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | — | A Catchable departure/arrival sensor (required) |
+| `title` | entity friendly name | Card header override |
+| `line_colors` | `true` | Colour line badges with official Berlin line colours |
+| `ring_symbols` | `true` | Show ⟳ / ⟲ for the S41 / S42 Ringbahn |
 
 ## Sensor data
 
