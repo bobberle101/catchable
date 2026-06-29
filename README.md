@@ -42,7 +42,7 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 ### HACS (recommended)
 
 1. In HACS, open the three-dot menu → **Custom repositories**.
-2. Add `https://github.com/borisvonmartens/catchable` with category **Integration**.
+2. Add `https://github.com/bobberle101/catchable` with category **Integration**.
 3. Search for **Catchable** and install it.
 4. Restart Home Assistant.
 

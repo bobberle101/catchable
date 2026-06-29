@@ -2,10 +2,10 @@
   "domain": "catchable",
   "name": "Catchable",
   "version": "1.0.0",
-  "documentation": "https://github.com/borisvonmartens/catchable",
-  "issue_tracker": "https://github.com/borisvonmartens/catchable/issues",
+  "documentation": "https://github.com/bobberle101/catchable",
+  "issue_tracker": "https://github.com/bobberle101/catchable/issues",
   "config_flow": true,
   "iot_class": "cloud_polling",
-  "codeowners": ["@borisvonmartens"],
+  "codeowners": ["@bobberle101"],
   "requirements": ["gtfs-realtime-bindings"]
 }
