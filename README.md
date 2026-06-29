@@ -33,12 +33,9 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 
 ## Screenshots
 
-Add screenshots to the [`images/`](images/) folder and reference them here, e.g.:
+![Catchable departure board card](images/card.png)
 
-```markdown
-![Departure board card](images/card.png)
-![Setup: pick a city](images/setup-city.png)
-```
+*The bundled card with official Berlin line colours, the S41/S42 Ringbahn ⟳/⟲ symbols, live delays ("2 min late") and cancellations.*
 
 ## Installation
 
