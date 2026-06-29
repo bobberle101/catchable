@@ -9,7 +9,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
-    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -28,7 +27,6 @@ from .const import (
     CONF_STOP_ID,
     CONF_STOP_NAME,
     CONF_TRANSPORT_TYPES,
-    CONF_TYPES_ALL,
     CONF_WALK_TIME,
     DEFAULT_DIRECTION,
     DEFAULT_MAX_DEPARTURES,
@@ -95,6 +93,24 @@ def _type_order(available: list[str]) -> list[str]:
         if key not in keys:
             keys.append(key)
     return keys
+
+
+def _resolve_transport_filter(
+    selected: list[str] | None, available: list[str]
+) -> list[str] | None:
+    """Turn a transport-type selection into the stored filter (``None`` = all).
+
+    There is deliberately no separate "all" switch: keeping every available
+    type selected (or clearing the field) means "all", so future new types
+    still appear; any narrower pick is stored verbatim. This removes the
+    footgun where a per-type selection was silently ignored unless a separate
+    toggle was turned off first.
+    """
+    chosen = list(selected or [])
+    universe = set(available) if available else set(TRANSPORT_TYPE_ORDER)
+    if not chosen or set(chosen) >= universe:
+        return None
+    return chosen
 
 
 def _type_selector(keys: list[str]) -> SelectSelector:
@@ -248,8 +264,8 @@ class CatchableConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             data = dict(self._stop_data)
-            data[CONF_TRANSPORT_TYPES] = (
-                None if user_input[CONF_TYPES_ALL] else user_input[CONF_TRANSPORT_TYPES]
+            data[CONF_TRANSPORT_TYPES] = _resolve_transport_filter(
+                user_input.get(CONF_TRANSPORT_TYPES), self._available_types
             )
             data[CONF_DIRECTION] = direction
             title = f"{self._stop_data[CONF_STOP_NAME]} {DIRECTION_LABELS[direction]}"
@@ -263,7 +279,6 @@ class CatchableConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_DIRECTION, default=DEFAULT_DIRECTION
                     ): _DIRECTION_SELECTOR,
-                    vol.Required(CONF_TYPES_ALL, default=True): BooleanSelector(),
                     vol.Required(
                         CONF_TRANSPORT_TYPES, default=default_types
                     ): _type_selector(keys),
@@ -293,30 +308,27 @@ class CatchableOptionsFlow(config_entries.OptionsFlow):
         def _current(key: str, default: Any) -> Any:
             return options.get(key, data.get(key, default))
 
+        available = await async_available_transport_types(
+            self.hass, data.get(CONF_SOURCE, DEFAULT_SOURCE), data[CONF_STOP_ID]
+        )
+        keys = _type_order(available)
+        current_types = _current(CONF_TRANSPORT_TYPES, None)
+        # Make sure every saved type is offered even if absent from the snapshot.
+        for key in current_types or []:
+            if key not in keys and key in TRANSPORT_TYPE_LABELS:
+                keys.append(key)
+
         if user_input is not None:
             return self.async_create_entry(
                 title="",
                 data={
                     CONF_WALK_TIME: int(user_input[CONF_WALK_TIME]),
                     CONF_MAX_DEPARTURES: int(user_input[CONF_MAX_DEPARTURES]),
-                    CONF_TRANSPORT_TYPES: (
-                        None
-                        if user_input[CONF_TYPES_ALL]
-                        else user_input[CONF_TRANSPORT_TYPES]
+                    CONF_TRANSPORT_TYPES: _resolve_transport_filter(
+                        user_input.get(CONF_TRANSPORT_TYPES), available
                     ),
                 },
             )
-
-        available = await async_available_transport_types(
-            self.hass, data.get(CONF_SOURCE, DEFAULT_SOURCE), data[CONF_STOP_ID]
-        )
-        keys = _type_order(available)
-        current_types = _current(CONF_TRANSPORT_TYPES, None)
-        all_selected = not current_types
-        # Make sure every saved type is offered even if absent from the snapshot.
-        for key in current_types or []:
-            if key not in keys and key in TRANSPORT_TYPE_LABELS:
-                keys.append(key)
 
         # Direction is fixed at creation (it defines the entity), so it is not
         # editable here — add a second stop for the other direction instead.
@@ -334,9 +346,6 @@ class CatchableOptionsFlow(config_entries.OptionsFlow):
                             _current(CONF_MAX_DEPARTURES, DEFAULT_MAX_DEPARTURES)
                         ),
                     ): _MAX_DEP_SELECTOR,
-                    vol.Required(
-                        CONF_TYPES_ALL, default=all_selected
-                    ): BooleanSelector(),
                     vol.Required(
                         CONF_TRANSPORT_TYPES,
                         default=current_types or list(keys),

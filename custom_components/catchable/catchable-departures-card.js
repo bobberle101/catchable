@@ -84,20 +84,24 @@ class CatchableDeparturesCard extends HTMLElement {
     return STRINGS[lang] || STRINGS.en;
   }
 
-  // Normalized U-/S-Bahn token ("U 1" -> "U1", "S 41" -> "S41"), else null.
+  // Normalized U-/S-Bahn token from a line label. The sensor prefixes the
+  // mode ("S S7", "U U1"), so scan each whitespace-separated token rather than
+  // only the start; also handles a bare token ("S41"). Returns null otherwise.
   _lineKey(line) {
-    const s = String(line || "").trim();
-    let m = s.match(/^U\s*0*(\d+)/i);
-    if (m) return "U" + m[1];
-    m = s.match(/^S\s*0*(\d+)/i);
-    if (m) return "S" + m[1];
+    for (const tok of String(line || "").trim().split(/\s+/)) {
+      let m = tok.match(/^U0*(\d+)$/i);
+      if (m) return "U" + m[1];
+      m = tok.match(/^S0*(\d+)$/i);
+      if (m) return "S" + m[1];
+    }
     return null;
   }
 
   _category(line) {
+    const key = this._lineKey(line);
+    if (key && key[0] === "U") return "subway";
+    if (key && key[0] === "S") return "suburban";
     const s = String(line || "").trim();
-    if (/^U\s*\d/i.test(s)) return "subway";
-    if (/^S\s*\d/i.test(s)) return "suburban";
     if (/^Tram/i.test(s)) return "tram";
     if (/^Bus/i.test(s)) return "bus";
     if (/^(Ferry|F\d)/i.test(s)) return "ferry";

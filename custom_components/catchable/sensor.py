@@ -501,6 +501,25 @@ def _load_station_index(lookup_dir: str) -> dict[str, tuple[str, str]]:
     return {sid: (stops.get(sid, sid), _derive_city(stops.get(sid, sid))) for sid in ids}
 
 
+def _dedupe_stations(items: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Collapse the duplicate stop ids a GTFS feed exposes for one station.
+
+    Feeds commonly list several ids for the same physical stop — the official
+    DHID plus legacy/local aliases. For VBB the realtime feed only references
+    the DHID (its numeric id starts with ``9``); alias ids (e.g. ``000…``)
+    never appear, so a board built on one stays permanently empty. When a name
+    has at least one DHID variant we drop the non-DHID aliases for that name, so
+    the picker never offers a dead stop. Names that *only* have a non-DHID id
+    are kept untouched, so nothing is silently lost.
+    """
+    dhid_names = {name for sid, name in items if _digits_only(sid).startswith("9")}
+    return [
+        (sid, name)
+        for sid, name in items
+        if _digits_only(sid).startswith("9") or name not in dhid_names
+    ]
+
+
 async def async_city_options(hass: HomeAssistant, source: str) -> list[str]:
     """Return the sorted list of distinct cities offered by a source."""
     source_def = resolve_source(source)
@@ -522,9 +541,13 @@ async def async_stations_in_city(
     index = await hass.async_add_executor_job(
         _load_station_index, source_def["lookup_dir"]
     )
-    items = [
-        (sid, name) for sid, (name, station_city) in index.items() if station_city == city
-    ]
+    items = _dedupe_stations(
+        [
+            (sid, name)
+            for sid, (name, station_city) in index.items()
+            if station_city == city
+        ]
+    )
     items.sort(key=lambda kv: (kv[1].lower(), kv[0]))
     return items, {sid: name for sid, name in items}
 

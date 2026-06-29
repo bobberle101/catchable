@@ -1,5 +1,7 @@
 # Catchable
 
+<img src="icon.png" alt="Catchable icon" width="140" align="right" />
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -58,7 +60,7 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 1. Go to **Settings → Devices & Services → Add Integration** and search for **Catchable**.
 2. **Choose a city** — start typing to search (e.g. *Potsdam*, *Berlin*).
 3. **Choose a station** — start typing the stop name; set your **walk time** (minutes to reach the stop) and how many **departures** to show.
-4. **Choose what to show** — departures or arrivals, and which transport types (or leave *All transport types* on).
+4. **Choose what to show** — departures or arrivals, and which transport types. Keeping every type selected means "show everything"; un-tick the ones you don't want to filter.
 
 Each board becomes a sensor named like `Burgstraße Departures`. Add a second board for the opposite direction or a different filter.
 
