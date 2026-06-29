@@ -13,7 +13,7 @@ The name says it all: tell Catchable how long you need to walk to the stop, and 
 
 ## Why Catchable?
 
-Most Home Assistant transit integrations lean on a community REST proxy (`*.transport.rest`) that can rate-limit or disappear. Catchable talks **directly to the official GTFS-RT feed** and bundles the station index locally (used only when you add a board), so setup is just *pick a city → pick a stop*. No stop IDs to hunt down, no keys to register, no third-party proxy rate limits.
+Most Home Assistant transit integrations lean on a community REST proxy (`*.transport.rest`) that can rate-limit or disappear. Catchable talks **directly to the GTFS-RT feed** and bundles the station index locally (used only when you add a board), so setup is just *pick a city → pick a stop*. No stop IDs to hunt down, no keys to register, no third-party proxy rate limits.
 
 Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled source, and new regions are just a feed URL plus a small lookup folder.
 
@@ -25,7 +25,7 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 - 🗺️ **Bundled VBB stop index** — the Berlin-Brandenburg stop index (~26,000 stations) ships with the integration and powers the setup picker, so there's no API key and no stop IDs to look up. Realtime availability depends on the VBB GTFS-RT feed.
 - 🚇 **Transport-type filter** — U-Bahn, S-Bahn, train, tram, bus, ferry. The types serving your stop are auto-detected and preselected, with an "All" toggle.
 - ⏱️ **Real-time delays & cancellations** *(where provided by the feed)* — colour-coded rows: green = on time, yellow = delayed (with a clear "*(3 min late)*" note), red = cancelled.
-- 🎨 **Official Berlin line colours** — U-Bahn and S-Bahn line badges use the official BVG / S-Bahn Berlin colours (other modes fall back to a per-category colour). Toggle with `line_colors`.
+- 🎨 **Berlin U-Bahn and S-Bahn line colours** — U-Bahn and S-Bahn line badges are colour-coded (other modes fall back to a per-category colour). Toggle with `line_colors`.
 - 🔄 **Ringbahn direction** — the S41 / S42 ring shows ⟳ (clockwise) / ⟲ (anti-clockwise) next to the line. Toggle with `ring_symbols`.
 - 🎴 **Bundled Lovelace card** — auto-registered by the integration (no dashboard resource to add). Minutes are right-aligned and tabular; the stop name is the card title.
 - 🌍 **Localized** — English (default) and German for the setup flow and the card.
@@ -35,7 +35,7 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 
 ![Catchable departure board card](images/card.png)
 
-*The bundled card with official Berlin line colours, the S41/S42 Ringbahn ⟳/⟲ symbols, live delays ("2 min late") and cancellations.*
+*The bundled card with Berlin U-/S-Bahn line colours, the S41/S42 Ringbahn ⟳/⟲ symbols, live delays ("2 min late") and cancellations. Left: a departures board (→); right: an arrivals board (←).*
 
 ## Installation
 
@@ -62,6 +62,8 @@ Under the hood it's a **generic GTFS-RT adapter**: VBB is the first bundled sour
 
 Each board becomes a sensor named like `Burgstraße Departures`. Add a second board for the opposite direction or a different filter.
 
+> The transport-type pre-selection is based on a live snapshot of the feed taken during setup. If the feed is briefly unavailable, all types are offered — you can refine them anytime via the integration's options.
+
 ## The Lovelace card
 
 Add a card and choose **Catchable Departures**, or in YAML:
@@ -70,7 +72,7 @@ Add a card and choose **Catchable Departures**, or in YAML:
 type: custom:catchable-departures-card
 entity: sensor.burgstrasse_departures
 # title: optional — defaults to the entity's friendly name (the stop name)
-# line_colors: true   # official Berlin U-/S-Bahn line colours (default: true)
+# line_colors: true   # Berlin U-/S-Bahn line colours (default: true)
 # ring_symbols: true  # ⟳ / ⟲ for the S41 / S42 Ringbahn (default: true)
 ```
 
@@ -79,11 +81,11 @@ The card renders one row per service: line + destination on the left, minutes ri
 ### Card options
 
 | Option | Default | Description |
-|---|---|---|
-| `entity` | — | A Catchable departure/arrival sensor (required) |
-| `title` | entity friendly name | Card header override |
-| `line_colors` | `true` | Colour line badges with official Berlin line colours |
-| `ring_symbols` | `true` | Show ⟳ / ⟲ for the S41 / S42 Ringbahn |
+|---|---:|---|
+| `entity` | — | A Catchable departure/arrival sensor. Required. |
+| `title` | entity friendly name | Card header override. |
+| `line_colors` | `true` | Colour line badges with Berlin U-/S-Bahn line colours. |
+| `ring_symbols` | `true` | Show ⟳ / ⟲ for the S41 / S42 Ringbahn. |
 
 ## Sensor data
 
@@ -91,13 +93,13 @@ The sensor's state is the minutes until the next (non-cancelled) departure. Usef
 
 | Attribute | Description |
 |---|---|
-| `departures` | List of upcoming services (`line`, `direction`, `departure_in_min`, `delay_min`, `cancelled`, `kind`) |
-| `stop_name` / `stop_id` | The configured stop |
-| `direction` | `departures` or `arrivals` |
-| `walk_time_minutes` | Minimum minutes-to-departure shown |
-| `transport_types` | Active type filter, or `all` |
-| `stale` | `true` when showing cached data because the live feed was unreachable |
-| `refreshed_at` | Timestamp of the last successful fetch |
+| `departures` | List of upcoming services (`line`, `direction`, `departure_in_min`, `delay_min`, `cancelled`, `kind`). |
+| `stop_name` / `stop_id` | The configured stop. |
+| `direction` | `departures` or `arrivals`. |
+| `walk_time_minutes` | Minimum minutes-to-departure shown. |
+| `transport_types` | Active type filter, or `all`. |
+| `stale` | `true` when showing cached data because the live feed was unreachable. |
+| `refreshed_at` | Timestamp of the last successful fetch. |
 
 ## How it works
 

@@ -14,7 +14,7 @@
  *   type: custom:catchable-departures-card
  *   entity: sensor.your_stop_departures
  *   title: optional override (defaults to the entity's friendly name)
- *   line_colors: true   # official Berlin U-/S-Bahn line colours (default: true)
+ *   line_colors: true   # Berlin U-/S-Bahn line colours (default: true)
  *   ring_symbols: true  # ⟳ / ⟲ for the S41 / S42 Ringbahn (default: true)
  */
 
@@ -39,9 +39,8 @@ const STRINGS = {
   },
 };
 
-// Official Berlin U-Bahn and S-Bahn line colours. Keys are normalized line
-// tokens (mode letter + number, e.g. "U1", "S41"). Sources: BVG / S-Bahn
-// Berlin corporate line colours.
+// Berlin U-Bahn and S-Bahn line colours. Keys are normalized line tokens
+// (mode letter + number, e.g. "U1", "S41").
 const LINE_COLORS = {
   U1: "#7DAD4C", U2: "#DA421E", U3: "#16683D", U4: "#F0D722", U5: "#7E5330",
   U6: "#8C6DAB", U7: "#528DBA", U8: "#224F86", U9: "#F3791D",
@@ -190,7 +189,7 @@ class CatchableDeparturesCard extends HTMLElement {
         const rawLine = d.line || "—";
         const place = this._esc(d.direction || "—");
 
-        // Line badge: optional official colour + optional Ringbahn symbol.
+        // Line badge: optional line colour + optional Ringbahn symbol.
         const ring = this._ringSymbols ? this._ringSymbol(rawLine) : "";
         const lineText = this._esc(rawLine) + (ring ? `\u00a0${ring}` : "");
         const color = this._lineColors ? this._lineColor(rawLine) : null;
