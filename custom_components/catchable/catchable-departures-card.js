@@ -161,6 +161,7 @@ class CatchableDeparturesCard extends HTMLElement {
     const key = JSON.stringify([
       title,
       attrs.stale,
+      attrs.direction,
       departures,
       this._lineColors,
       this._ringSymbols,
@@ -181,7 +182,11 @@ class CatchableDeparturesCard extends HTMLElement {
         const cancelled = !!d.cancelled;
         const delay = Number(d.delay_min || 0);
         const status = cancelled ? "cancelled" : delay >= 1 ? "delayed" : "ontime";
-        const arrow = (d.kind || "departure") === "arrival" ? "←" : "→";
+        // Arrow follows the board direction: departures point to the
+        // destination (→), arrivals point the opposite way, from the origin (←).
+        const board = attrs.direction === "arrivals" ? "arrival" : "departure";
+        const kind = d.kind || board;
+        const arrow = kind === "arrival" ? "←" : "→";
         const rawLine = d.line || "—";
         const place = this._esc(d.direction || "—");
 
@@ -240,16 +245,15 @@ class CatchableDeparturesCard extends HTMLElement {
       .rows { display: flex; flex-direction: column; }
       .row {
         display: flex; align-items: center; justify-content: space-between;
-        gap: 12px; padding: 8px 10px; margin: 4px 0; border-radius: 10px;
-        border-left: 4px solid var(--divider-color);
+        gap: 12px; padding: 8px 12px; margin: 4px 0; border-radius: 10px;
         background: var(--ha-card-background, var(--card-background-color));
       }
-      .row.ontime { border-left-color: var(--success-color, #2e7d32);
-        background: color-mix(in srgb, var(--success-color, #2e7d32) 10%, transparent); }
-      .row.delayed { border-left-color: var(--warning-color, #f9a825);
-        background: color-mix(in srgb, var(--warning-color, #f9a825) 14%, transparent); }
-      .row.cancelled { border-left-color: var(--error-color, #c62828);
-        background: color-mix(in srgb, var(--error-color, #c62828) 12%, transparent); }
+      .row.ontime {
+        background: color-mix(in srgb, var(--success-color, #2e7d32) 12%, transparent); }
+      .row.delayed {
+        background: color-mix(in srgb, var(--warning-color, #f9a825) 16%, transparent); }
+      .row.cancelled {
+        background: color-mix(in srgb, var(--error-color, #c62828) 14%, transparent); }
       .left { display: flex; align-items: center; gap: 8px; min-width: 0; }
       .line { font-weight: 600; white-space: nowrap; }
       .line.badge {
