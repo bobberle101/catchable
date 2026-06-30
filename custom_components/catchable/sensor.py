@@ -168,13 +168,42 @@ def _format_line(route_id: str, routes: dict[str, Any]) -> str | None:
     return mode or None
 
 
-def _destination_name(stop_id: str, stops: dict[str, Any]) -> str | None:
-    name = stops.get(_station_number(stop_id))
-    if not name:
-        return None
-    if ", " in name:
-        return name.split(", ", 1)[1]
-    return name
+def _endpoint_name(
+    stop_updates: list[Any],
+    stops: dict[str, Any],
+    *,
+    exclude_index: int,
+    toward_end: bool,
+) -> str | None:
+    """Resolve a trip's destination (``toward_end``) or origin name.
+
+    Scans the stop sequence away from ``exclude_index`` (the board's own stop)
+    toward the trip's terminus/origin and returns the *furthest* stop we can
+    name. Realtime feeds occasionally run a trip a few stops past VBB's
+    published network — e.g. an RE7 continuing to small Saxony-Anhalt stops that
+    only carry bare ids absent from the static catalogue — leaving the raw
+    terminus unnameable. Walking inward to the last stop we *can* name yields
+    the practical destination (``Dessau, Hauptbahnhof``) instead of an em-dash.
+
+    The board's own stop is always excluded, so a service never shows itself as
+    its destination/origin. When the true terminus resolves directly the concise
+    ``Stop`` form is kept; a fallback to an off-network endpoint keeps the full
+    ``City, Stop`` name since it is in another town.
+    """
+    if toward_end:
+        true_end = len(stop_updates) - 1
+        scan = range(true_end, exclude_index, -1)
+    else:
+        true_end = 0
+        scan = range(0, exclude_index)
+    for j in scan:
+        name = stops.get(_station_number(stop_updates[j].stop_id or ""))
+        if not name:
+            continue
+        if j == true_end and ", " in name:
+            return name.split(", ", 1)[1]
+        return name
+    return None
 
 
 def _load_json(path: str, *, optional: bool = False) -> dict[str, Any]:
@@ -294,17 +323,6 @@ def _parse_feed(
         line = _format_line(route_id, routes)
         trip_cancelled = trip_update.trip.schedule_relationship == cancelled_rel
         stop_updates = list(trip_update.stop_time_update)
-        destination = (
-            _destination_name(stop_updates[-1].stop_id or "", stops)
-            if stop_updates
-            else None
-        )
-        origin = (
-            _destination_name(stop_updates[0].stop_id or "", stops)
-            if stop_updates
-            else None
-        )
-
         last_index = len(stop_updates) - 1
         for index, stop_update in enumerate(stop_updates):
             incoming_stop_id = stop_update.stop_id or ""
@@ -323,11 +341,19 @@ def _parse_feed(
             # is really a terminating arrival (its destination is this very
             # station), and an "arrival" at the first stop is the trip
             # originating here. VBB trip updates carry the full stop sequence,
-            # so the first/last index reliably marks the origin/terminus.
+            # so the first/last index reliably marks the origin/terminus. The
+            # destination/origin name is resolved relative to this stop, so it
+            # is always a real downstream/upstream station (never ourselves).
             candidates: list[tuple[str, str, Any | None]] = []
             if want_departures and index != last_index:
+                destination = _endpoint_name(
+                    stop_updates, stops, exclude_index=index, toward_end=True
+                )
                 candidates.append(("departure", "departure", destination))
             if want_arrivals and index != 0:
+                origin = _endpoint_name(
+                    stop_updates, stops, exclude_index=index, toward_end=False
+                )
                 candidates.append(("arrival", "arrival", origin))
 
             for kind, field, place in candidates:
