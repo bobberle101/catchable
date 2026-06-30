@@ -74,7 +74,14 @@ class CatchableDeparturesCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    this._render();
+    // Never let a transient render error bubble up to Home Assistant's card
+    // wrapper — it would replace the whole card with a "Configuration error".
+    // Keeping the last good DOM is always better than blanking the card.
+    try {
+      this._render();
+    } catch (err) {
+      console.error("catchable-departures-card: render failed", err);
+    }
   }
 
   _t() {
@@ -316,13 +323,20 @@ class CatchableDeparturesCard extends HTMLElement {
   }
 }
 
-customElements.define("catchable-departures-card", CatchableDeparturesCard);
+// Guard the registration: if this module is ever evaluated twice in the same
+// page (cached + re-imported, multiple resources, etc.), a second unconditional
+// customElements.define() throws and aborts module evaluation, which surfaces
+// as an intermittent "Configuration error" on every card using this element.
+if (!customElements.get("catchable-departures-card")) {
+  customElements.define("catchable-departures-card", CatchableDeparturesCard);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "catchable-departures-card",
-  name: "Catchable Departures",
-  description: "Departure board for the Catchable GTFS-RT integration.",
-});
-
-console.info("%c CATCHABLE-DEPARTURES-CARD ", "color: white; background: #1565c0;");
+if (!window.customCards.some((c) => c.type === "catchable-departures-card")) {
+  window.customCards.push({
+    type: "catchable-departures-card",
+    name: "Catchable Departures",
+    description: "Departure board for the Catchable GTFS-RT integration.",
+  });
+  console.info("%c CATCHABLE-DEPARTURES-CARD ", "color: white; background: #1565c0;");
+}

@@ -10,6 +10,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN
 
@@ -26,12 +27,22 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     This means users do not have to add a dashboard resource by hand — the card
     is served from the integration and loaded as a frontend module.
+
+    The static path is served *with* cache headers and the module is referenced
+    by a version-stamped URL (``?v=<version>``). This lets the browser cache the
+    card so a frontend reload (e.g. right after a Home Assistant restart) serves
+    it from cache instead of depending on a fresh fetch — that fetch can briefly
+    404 in the window before this static route is re-registered, which otherwise
+    leaves the custom element undefined and the cards stuck on "Configuration
+    error" until a manual reload. Bumping the integration version busts the
+    cache, so updates still propagate immediately.
     """
     card_path = os.path.join(os.path.dirname(__file__), CARD_FILENAME)
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL, card_path, cache_headers=False)]
+        [StaticPathConfig(CARD_URL, card_path, cache_headers=True)]
     )
-    add_extra_js_url(hass, CARD_URL)
+    integration = await async_get_integration(hass, DOMAIN)
+    add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
     return True
 
 
