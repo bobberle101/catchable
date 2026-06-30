@@ -259,8 +259,10 @@ def _parse_feed(
     reflects what is actually catchable on foot. If ``transport_types`` is set,
     only those categories are kept. ``directions`` selects departures and/or
     arrivals: a departure shows the trip destination, an arrival shows where the
-    trip comes from. Each entry carries the line, the relevant place name,
-    minutes-to-go, integer delay, cancellation state and the board ``kind``.
+    trip comes from. A board never lists a service to/from its own station —
+    entries where this stop is the trip's terminus (for departures) or origin
+    (for arrivals) are skipped. Each entry carries the line, the relevant place
+    name, minutes-to-go, integer delay, cancellation state and the board ``kind``.
     """
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(payload)
@@ -303,7 +305,8 @@ def _parse_feed(
             else None
         )
 
-        for stop_update in stop_updates:
+        last_index = len(stop_updates) - 1
+        for index, stop_update in enumerate(stop_updates):
             incoming_stop_id = stop_update.stop_id or ""
             if not incoming_stop_id:
                 continue
@@ -316,10 +319,15 @@ def _parse_feed(
             )
 
             # A single stop can yield both a departure and an arrival entry.
+            # Skip the trip's own endpoints: a "departure" from the final stop
+            # is really a terminating arrival (its destination is this very
+            # station), and an "arrival" at the first stop is the trip
+            # originating here. VBB trip updates carry the full stop sequence,
+            # so the first/last index reliably marks the origin/terminus.
             candidates: list[tuple[str, str, Any | None]] = []
-            if want_departures:
+            if want_departures and index != last_index:
                 candidates.append(("departure", "departure", destination))
-            if want_arrivals:
+            if want_arrivals and index != 0:
                 candidates.append(("arrival", "arrival", origin))
 
             for kind, field, place in candidates:
